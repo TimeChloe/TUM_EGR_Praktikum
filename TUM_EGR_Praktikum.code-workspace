@@ -4,81 +4,62 @@
 			"path": "T1-Aufgabe1"
 		},
 		{
-			"name": "T1-Aufgabe2",
 			"path": "T1-Aufgabe2"
 		},
 		{
-			"name": "T1-Aufgabe3",
 			"path": "T1-Aufgabe3"
 		},
 		{
-			"name": "T1-Aufgabe4",
 			"path": "T1-Aufgabe4"
 		},
 		{
-			"name": "T1-Aufgabe5",
 			"path": "T1-Aufgabe5"
 		},
 		{
 			"path": "T2-Aufgabe1"
 		},
 		{
-			"name": "T2-Aufgabe2",
 			"path": "T2-Aufgabe2"
 		},
 		{
-			"name": "T2-Aufgabe3",
 			"path": "T2-Aufgabe3"
 		},
 		{
-			"name": "T2-Aufgabe4",
 			"path": "T2-Aufgabe4"
 		},
 		{
-			"name": "T3-Aufgabe1",
 			"path": "T3-Aufgabe1"
 		},
 		{
-			"name": "T3-Aufgabe2",
 			"path": "T3-Aufgabe2"
 		},
 		{
-			"name": "T3-Aufgabe3",
 			"path": "T3-Aufgabe3"
 		},
 		{
-			"name": "T3-Aufgabe4",
 			"path": "T3-Aufgabe4"
 		},
 		{
-			"name": "T3-Aufgabe5",
 			"path": "T3-Aufgabe5"
 		},
 		{
-			"name": "T4-Aufgabe1",
 			"path": "T4-Aufgabe1"
 		},
 		{
-			"name": "T4-Aufgabe2",
 			"path": "T4-Aufgabe2"
 		},
 		{
-			"name": "T4-Aufgabe3",
 			"path": "T4-Aufgabe3"
 		},
 		{
-			"name": "T5-Aufgabe1",
 			"path": "T5-Aufgabe1"
 		},
 		{
-			"name": "T5-Aufgabe2",
 			"path": "T5-Aufgabe2"
+		},
+		{
+			"path": "Vorgefertigte Header"
 		}
 	],
-	"settings": {
-		"files.associations": {
-			"egr_gpio.h": "c",
-			"stdint.h": "c"
-		}
-	}
+	"settings": {}
 }
