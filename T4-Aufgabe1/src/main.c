@@ -3,49 +3,33 @@
  * Termin 4 - Aufgabe 1
  */
 
+#include <stdint.h>
 #include "egr_gpio.h"
+#include "Delay_ms.h"
+#include "stm32g431xx.h"
 
 // 定义I2C1时钟频率为10kHz
 #define I2C_TIMING 0xB0420F13
 #define I2C1_BASE 0x40005400
 #define RCC_APB1ENR1 0x58
 #define SLA_ADDRESS 0x57
+#define I2C_TIMINGR 0x10
+#define I2C_ISR 0x18
+#define I2C_ICR 0x1C
+#define I2C_TXDR 0x28
+#define I2C_RXDR 0x24
+#define I2C_CR2 0x04
+#define I2C_CR1 0x00
 
-// void I2C1_Init(void) {
-//     // 使能I2C1和GPIOB、GPIOA的时钟
-//     RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
-//     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOAEN;
+volatile uint8_t received_data[3];
+volatile uint8_t data_index = 0;
 
-//     // 配置GPIOA的I2C1_SCL引脚
-//     // PA15 -> I2C1_SCL
-//     GPIOA->MODER &= ~GPIO_MODER_MODER15;
-//     GPIOA->MODER |= GPIO_MODER_MODER15_1; // 选择AF模式
-//     GPIOA->OTYPER |= GPIO_OTYPER_OT_15; // 选择开漏模式
-//     GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR15; // 高速
-//     GPIOA->PUPDR &= ~GPIO_PUPDR_PUPDR15;
-//     GPIOA->AFR[1] |= (4 << (15-8)*4); // 选择AF4 (I2C1)
-
-//     // 配置GPIOB的I2C1_SDA引脚
-//     // PB7 -> I2C1_SDA
-//     GPIOB->MODER &= ~GPIO_MODER_MODER7;
-//     GPIOB->MODER |= GPIO_MODER_MODER7_1; // 选择AF模式
-//     GPIOB->OTYPER |= GPIO_OTYPER_OT_7; // 选择开漏模式
-//     GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR7; // 高速
-//     GPIOB->PUPDR &= ~GPIO_PUPDR_PUPDR7;
-//     GPIOB->AFR[0] |= (4 << (7)*4); // 选择AF4 (I2C1)
-
-//     // 复位I2C1
-//     RCC->APB1RSTR |= RCC_APB1RSTR_I2C1RST;
-//     RCC->APB1RSTR &= ~RCC_APB1RSTR_I2C1RST;
-
-//     // 配置I2C1
-//     I2C1->CR1 &= ~I2C_CR1_PE; // 禁用I2C1
-//     I2C1->TIMINGR = I2C_TIMING; // 设置时序寄存器
-//     I2C1->CR1 = I2C_CR1_ANFOFF; // 启用模拟滤波器
-//     I2C1->CR1 &= ~I2C_CR1_DNF; // 禁用数字滤波器
-//     I2C1->CR1 &= ~I2C_CR1_NOSTRETCH; // 禁用时钟拉伸
-//     I2C1->CR1 |= I2C_CR1_PE; // 启用I2C1
-// }
+void activate_i2c1(void)
+{
+    // activate I2C1 module
+    uint32_t volatile *adresse = (uint32_t *)(0x40021000 + RCC_APB1ENR1); //0x40021000 is the base address of the RCC module, 0x58 is the offset for the APB1ENR register
+    *adresse |= (1 << 21);
+}
 
 void I2C_Init(void) {
     // 使能I2C1和GPIOB、GPIOA的时钟
@@ -74,118 +58,163 @@ void I2C_Init(void) {
 
     // 配置I2C1
     // I2C1->CR1 &= ~I2C_CR1_PE; // 禁用I2C1
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x00);
-    *adresse &= ~(1 << 0);
+    uint32_t volatile *cr1_address = (uint32_t *)(I2C1_BASE + I2C_CR1);
+    *cr1_address &= ~(1 << 0);
 
     // I2C1->CR1 = I2C_CR1_ANFOFF; // 启用模拟滤波器
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x00);
-    *adresse |= (1 << 12);
+    *cr1_address |= (1 << 12);
 
     // I2C1->CR1 &= ~I2C_CR1_DNF; // 禁用数字滤波器
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x00);
-    *adresse &= ~(1 << 8);
-    *adresse &= ~(1 << 9);
-    *adresse &= ~(1 << 10);
-    *adresse &= ~(1 << 11);
+    *cr1_address &= ~(1 << 8);
+    *cr1_address &= ~(1 << 9);
+    *cr1_address &= ~(1 << 10);
+    *cr1_address &= ~(1 << 11);
 
     // PRESC = 3
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x10);
-    *adresse |= (3 << 28);
-
+    uint32_t volatile *timingr_address = (uint32_t *)(I2C1_BASE + I2C_TIMINGR);
+    *timingr_address |= (3 << 28);
     // SCLDEL = 0x4
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x10);
-    *adresse |= (4 << 20);
-
+    *timingr_address |= (4 << 20);
     // SDADEL = 0x2
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x10);
-    *adresse |= (2 << 16);
-
+    *timingr_address |= (2 << 16);
     // SCLH = 0xC3
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x10);
-    *adresse |= (0xC3 << 8);
-
+    *timingr_address |= (0xC3 << 8);
     // SCLL = 0xC7
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x10);
-    *adresse |= (0xC7 << 0);
+    *timingr_address |= (0xC7 << 0);
+
 
     // I2C1->CR1 &= ~I2C_CR1_NOSTRETCH; // 禁用时钟拉伸
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x00);
-    *adresse &= ~(1 << 17);
+    *cr1_address &= ~(1 << 17);
 
     // I2C1->CR1 |= I2C_CR1_PE; // 启用I2C1
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x00);
-    *adresse |= (1 << 0);
+    *cr1_address |= (1 << 0);
 
 }
 
-void activate_i2c1(void)
+void I2C1_EV_IRQHandler(void)
 {
-    // activate I2C1 module
-    uint32_t volatile *adresse = (uint32_t *)(0x40021000 + RCC_APB1ENR1); //0x40021000 is the base address of the RCC module, 0x58 is the offset for the APB1ENR register
-    *adresse |= (1 << 21);
+    uint32_t volatile *isr_address = (uint32_t *)(I2C1_BASE + I2C_ISR);
+    uint32_t volatile *icr_address = (uint32_t *)(I2C1_BASE + I2C_ICR);
+    uint32_t volatile *cr2_address = (uint32_t *)(I2C1_BASE + I2C_CR2);
+    uint32_t volatile *cr1_address = (uint32_t *)(I2C1_BASE + I2C_CR1);
+    uint32_t volatile *txdr_address = (uint32_t *)(I2C1_BASE + I2C_TXDR);
+    uint32_t volatile *rxdr_address = (uint32_t *)(I2C1_BASE + I2C_RXDR);
+
+
+    // if (I2C_ISR & I2C_ISR_RXNE)
+    if (*isr_address & (1 << 2))
+    {
+        // 读取数据
+        received_data[data_index++] = *rxdr_address;
+
+        if (data_index >= 3)
+        {
+            // 接收完成
+            // 禁用RXNE中断
+            // I2C_CR1 &= ~I2C_CR1_RXIE;
+            *cr1_address &= ~(1 << 2);
+
+            // 等待5毫秒
+            delay_ms(5);
+
+            // 清除停止标志
+            // I2C_ICR |= I2C_ICR_STOPCF;
+            *icr_address |= (1 << 5);
+
+            // 重置I2C_CR2寄存器
+            // I2C_CR2 = 0;
+            *cr2_address = 0;
+
+            // 重置数据索引
+            data_index = 0;
+        }
+    }
 }
+
 
 void I2C1_SendStartCommand(uint32_t sla_address, uint8_t* data, uint8_t num_bytes) {
     // 配置传输参数
 
     // I2C1->CR2 = (I2C_ADDRESS << 1) & I2C_CR2_SADD; // 设置从设备地址
-    uint32_t volatile *adresse = (uint32_t *)(I2C1_BASE + 0x04);
+    uint32_t volatile *cr2_address = (uint32_t *)(I2C1_BASE + I2C_CR2);
     // 将从设备地址写入 CR2 寄存器的 SADD[7:1]
-    *adresse = (SLA_ADDRESS << 1) & 0xFF;  
+    *cr2_address = (sla_address << 1) & 0xFF;  
     // In 7-bit addressing mode (ADD10 = 0)
-    *adresse &= ~(1 << 10);
+    *cr2_address &= ~(1 << 11);
+
 
     // I2C1->CR2 |= (num_bytes << I2C_CR2_NBYTES_Pos); // 设置传输字节数
     // 将传输字节数写入 CR2 寄存器的 NBYTES[7:0]
-    *adresse |= (num_bytes << 16);
-
+    *cr2_address |= (num_bytes << 16);
 
     // I2C1->CR2 |= autoend ? I2C_CR2_AUTOEND : 0; // 设置AUTOEND
-    *adresse |= (1 << 25);
-
+    *cr2_address |= (1 << 25);
 
     // I2C1->CR2 &= ~I2C_CR2_RD_WRN; // 设置为写模式
-    *adresse &= ~(1 << 10);
+    *cr2_address &= ~(1 << 10);
 
     // I2C1->CR2 |= I2C_CR2_START; // 产生开始条件
-    *adresse |= (1 << 13);
-    
+    *cr2_address |= (1 << 13);
+
+    //I2C_ISR_TXIS
+    uint32_t volatile *isr_address = (uint32_t *)(I2C1_BASE + I2C_ISR);
+    uint32_t volatile *txdr_address = (uint32_t *)(I2C1_BASE + I2C_TXDR);
 
     for (int i = 0; i < num_bytes; i++) {
-        // 等待传输缓冲区为空
-        while (!(I2C1->ISR & I2C_ISR_TXIS)) {
-            if (I2C1->ISR & I2C_ISR_NACKF) {
-                // 检测到NACK信号，终止传输
-                return;
-            }
+        // 检查是否接收到NACK信号，如果接收到NACK信号，终止传输
+        if (*isr_address & (1 << 4)) {
+            return;
+        }
+
+        // 检查传输缓冲区是否为空，如果传输缓冲区不为空，等待
+        while (!(*isr_address & (1 << 1))) {
+            delay_ms(1);
         }
 
         // 发送数据
-        I2C1->TXDR = data[i];
+        *txdr_address = data[i];
+
+        // 等待5ms确保数据传输完成
+        delay_ms(5);
     }
 
-    // 等待传输完成
-    while (!(I2C1->ISR & I2C_ISR_TC)) {
-        if (I2C1->ISR & I2C_ISR_NACKF) {
-            // 检测到NACK信号，终止传输
-            return;
-        }
-    }
-
-    // 如果设置了AUTOEND，则不需要手动发送停止条件
-    if (!autoend) {
-        I2C1->CR2 |= I2C_CR2_STOP; // 发送停止条件
-    }
-
-    // 清除停止条件标志
-    while (I2C1->ISR & I2C_ISR_STOPF) {}
-    I2C1->ICR |= I2C_ICR_STOPCF;
+    // // 清除停止条件标志
+    // I2C1->ICR |= I2C_ICR_STOPCF;
+    uint32_t volatile *icr_address = (uint32_t *)(I2C1_BASE + I2C_ICR);
+    *icr_address |= (1 << 5);
 
     // 重置I2C_CR2寄存器
-    I2C1->CR2 = 0;
+    // I2C1->CR2 = 0;
+    *cr2_address = 0;
 }
 
-#include <stdint.h>
+void i2c_master_receive(uint32_t sla_address, uint8_t num_bytes)
+{
+    // 设置NBYTES为3，AUTOEND=1
+    uint32_t volatile *cr2_address = (uint32_t *)(I2C1_BASE + I2C_CR2);
+    *cr2_address = (num_bytes << 16);
+    *cr2_address |= (1 << 25);
+
+
+    // 配置从地址和传输方向（读）
+    *cr2_address |= (1 << 10);
+    // 将从设备地址写入 CR2 寄存器的 SADD[7:1]
+    *cr2_address = (sla_address << 1) & 0xFF;  
+
+    // 启动I2C传输
+    // I2C_CR2 |= I2C_CR2_START;
+    *cr2_address |= (1 << 13);
+
+    // 启用RXNE中断
+    // I2C_CR1 |= I2C_CR1_RXIE;
+    uint32_t volatile *cr1_address = (uint32_t *)(I2C1_BASE + I2C_CR1);
+    *cr1_address |= (1 << 2);
+
+    // 配置中断优先级和启用中断
+    NVIC_SetPriority(I2C1_EV_IRQn, 1);
+    NVIC_EnableIRQ(I2C1_EV_IRQn);
+}
+
 
 int main(void)
 {
