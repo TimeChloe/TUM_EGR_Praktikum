@@ -23,6 +23,7 @@
 #define I2C_RXDR 0x24
 #define I2C_CR2 0x04
 #define I2C_CR1 0x00
+#define RCC_CCIPR 0x88
 
 #define SLA_ADDRESS 0b1010111
 
@@ -34,6 +35,7 @@ void I2C_Init(void);
 void I2C1_EV_IRQHandler(void);
 void I2C1_SendStartCommand(uint32_t sla_address, uint8_t* data, uint8_t num_bytes);
 void i2c_master_receive(uint32_t sla_address, uint8_t num_bytes);
+void clock_select_i2c1(void);
 
 
 

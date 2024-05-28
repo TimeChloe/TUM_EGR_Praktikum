@@ -10,9 +10,18 @@ uint8_t data_index = 0;
 
 void activate_i2c1(void)
 {
-    // activate I2C1 module
-    uint32_t volatile *adresse = (uint32_t *)(0x40021000 + RCC_APB1ENR1); //0x40021000 is the base address of the RCC module, 0x58 is the offset for the APB1ENR register
+    // activate I2C1 module    P124
+    uint32_t volatile *adresse = (uint32_t *)(0x40021000 + RCC_APB1ENR1); //0x40021000 is the base address of the RCC module
     *adresse |= (1 << 21);
+}
+
+// I2C1 clock source selection     01: System clock (SYSCLK) selected as I2C1 clock
+void clock_select_i2c1(void)
+{
+    // select system clock as I2C1 clock source
+    uint32_t volatile *adresse = (uint32_t *)(0x40021000 + RCC_CCIPR); //0x40021000 is the base address of the RCC module
+    *adresse &= ~(1 << 13);
+    *adresse |= (1 << 12);
 }
 
 void I2C_Init(void) {
@@ -22,6 +31,8 @@ void I2C_Init(void) {
     activate_i2c1();
     activate_gpio_a();
     activate_gpio_b();
+
+    clock_select_i2c1();
 
     // 配置GPIOA的I2C1_SCL引脚
     // PA15 -> I2C1_SCL
