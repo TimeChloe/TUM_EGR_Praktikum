@@ -14,9 +14,9 @@
 int main(void)
 {
     // shut down all the motors
-    activate_gpio_a();
-    activate_gpio_b();
-    DCMotor_All_Stop();
+    // activate_gpio_a();
+    // activate_gpio_b();
+    // DCMotor_All_Stop();
 
     ADC_Init(3, MODE_SINGLE);
     ADC_start(MODE_SINGLE);
