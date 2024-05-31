@@ -19,13 +19,13 @@
 #define I2C_TIMINGR 0x10
 #define I2C_ISR 0x18
 #define I2C_ICR 0x1C
-#define I2C_TXDR 0x28
-#define I2C_RXDR 0x24
+#define I2C_TXDR 0x28 //I2C transmit data register (I2C_TXDR)
+#define I2C_RXDR 0x24 //I2C receive data register (I2C_RXDR)
 #define I2C_CR2 0x04
 #define I2C_CR1 0x00
 #define RCC_CCIPR 0x88
 
-#define SLA_ADDRESS 0b1010111
+#define SLA_ADDRESS 0x57
 
 uint32_t received_data[3];
 uint8_t data_index;
@@ -33,7 +33,7 @@ uint8_t data_index;
 void activate_i2c1(void);
 void I2C_Init(void);
 void I2C1_EV_IRQHandler(void);
-void I2C1_SendStartCommand(uint32_t sla_address, uint8_t* data, uint8_t num_bytes);
+void I2C1_SendStartCommand(uint32_t sla_address,int data, uint8_t num_bytes);
 void i2c_master_receive(uint32_t sla_address, uint8_t num_bytes);
 void clock_select_i2c1(void);
 

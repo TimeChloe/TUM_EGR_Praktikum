@@ -28,27 +28,31 @@ void I2C_Init(void) {
     // 使能I2C1和GPIOB、GPIOA的时钟
     // RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
     // RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOAEN;
-    activate_i2c1();
     activate_gpio_a();
     activate_gpio_b();
 
+    activate_i2c1();
     clock_select_i2c1();
 
+
+
     // 配置GPIOA的I2C1_SCL引脚
-    // PA15 -> I2C1_SCL
+    // PA15 -> I2C1_SCL  //I2C需要设置上拉电阻
     gpio_mode(GPIOA_BASE, 15, GPIO_ALTERNATE);
-    gpio_output_type(GPIOA_BASE, 15, GPIO_OPEN_DRAIN);
-    // gpio_output_speed(GPIOA_BASE, 15, GPIO_VERY_HIGH_SPEED);
-    // gpio_pull(GPIOA_BASE, 15, GPIO_NO_PULL);
     gpio_alternate_function(GPIOA_BASE, 15, GPIO_AF4);
+    gpio_output_type(GPIOA_BASE, 15, GPIO_OPEN_DRAIN);
+    gpio_output_speed(GPIOA_BASE, 15, GPIO_HIGH_SPEED);
+    gpio_pull(GPIOA_BASE, 15, GPIO_PULL_UP);
+
 
     // 配置GPIOB的I2C1_SDA引脚
     // PB7 -> I2C1_SDA
     gpio_mode(GPIOB_BASE, 7, GPIO_ALTERNATE);
-    gpio_output_type(GPIOB_BASE, 7, GPIO_OPEN_DRAIN);
-    // gpio_output_speed(GPIOB_BASE, 7, GPIO_VERY_HIGH_SPEED);
-    // gpio_pull(GPIOB_BASE, 7, GPIO_NO_PULL);
     gpio_alternate_function(GPIOB_BASE, 7, GPIO_AF4);
+    gpio_output_type(GPIOB_BASE, 7, GPIO_OPEN_DRAIN);
+    gpio_output_speed(GPIOB_BASE, 7, GPIO_HIGH_SPEED);
+    gpio_pull(GPIOB_BASE, 7, GPIO_PULL_UP);
+
 
 
     // 配置I2C1
@@ -126,7 +130,7 @@ void I2C1_EV_IRQHandler(void)
 }
 
 
-void I2C1_SendStartCommand(uint32_t sla_address, uint8_t* data, uint8_t num_bytes) {
+void I2C1_SendStartCommand(uint32_t sla_address, int data, uint8_t num_bytes) {
     // 配置传输参数
     uint32_t volatile *isr_address = (uint32_t *)(I2C1_BASE + I2C_ISR);
     uint32_t volatile *txdr_address = (uint32_t *)(I2C1_BASE + I2C_TXDR);
@@ -141,7 +145,7 @@ void I2C1_SendStartCommand(uint32_t sla_address, uint8_t* data, uint8_t num_byte
 
 
     // I2C1->CR2 |= (num_bytes << I2C_CR2_NBYTES_Pos); // 设置传输字节数
-    // 将传输字节数写入 CR2 寄存器的 NBYTES[7:0]
+    // 将传输字节数写入 CR2 寄存器的 NBYTES[7:0]  Bits 23:16
     *cr2_address |= (num_bytes << 16);
 
     // I2C1->CR2 |= autoend ? I2C_CR2_AUTOEND : 0; // 设置AUTOEND
@@ -150,8 +154,10 @@ void I2C1_SendStartCommand(uint32_t sla_address, uint8_t* data, uint8_t num_byte
     // I2C1->CR2 &= ~I2C_CR2_RD_WRN; // 设置为写模式
     *cr2_address &= ~(1 << 10);
 
-    // I2C1->CR2 |= I2C_CR2_START; // 产生开始条件
+    // I2C1->CR2 |= I2C_CR2_START; // 产生开始条件  
+    *cr2_address &= ~(1 << 13);
     *cr2_address |= (1 << 13);
+
 
     //I2C_ISR_TXIS
 
@@ -161,13 +167,13 @@ void I2C1_SendStartCommand(uint32_t sla_address, uint8_t* data, uint8_t num_byte
             return;
         }
 
-        // 检查传输缓冲区是否为空，如果传输缓冲区不为空，等待
+        // 检查传输缓冲区是否为空，如果传输缓冲区不为空，等待   
         while (!(*isr_address & (1 << 1))) {
             delay_ms(1);
         }
 
         // 发送数据
-        *txdr_address = data[i];
+        *txdr_address = data;
 
         // 等待5ms确保数据传输完成
         delay_ms(5);
