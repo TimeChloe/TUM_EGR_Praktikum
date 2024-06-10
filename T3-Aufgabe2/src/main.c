@@ -4,8 +4,10 @@
  * Datei: main.c
  * Date: 16.05.2024
  * Autor: Yue Zhang
- * Description: 
- * 
+ * Description: DC-Motor Geschwindigkeitssteuerung
+ *               Taster 1: Increase Speed
+ *               Taster 2: Decrease Speed
+ *               Taster 3: Stop Motor 
  * Last modified: 16.05.2024
  */
 
@@ -15,14 +17,14 @@
 #include "egr_gpio.h"
 #include "Delay_ms.h"
 
-#define BUTTON1_INCREASE 2   // 增速按钮连接的GPIO引脚
-#define BUTTON2_DECREASE 3  // 减速按钮连接的GPIO引脚
-#define BUTTON3_STOP 4  // 停止按钮连接的GPIO引脚
+#define BUTTON1_INCREASE 2   // GPIO Pin for Increase Button
+#define BUTTON2_DECREASE 3  // GPIO Pin for Decrease Button
+#define BUTTON3_STOP 4  // GPIO Pin for Stop Button
 
-#define SPEED_STEP 10  // 速度改变的步长
+#define SPEED_STEP 10  // Speed Step for Increase/Decrease
 
 void setup_buttons(void) {
-    // 激活GPIOA模块
+    // activate GPIO A Module
     activate_gpio_a();
 
     // Set Buttons as Input
@@ -69,6 +71,6 @@ int main(void) {
 
 
         // 延迟一段时间以防止按钮抖动
-        delay_ms(100);
+        delay_ms(50);
     }
 }

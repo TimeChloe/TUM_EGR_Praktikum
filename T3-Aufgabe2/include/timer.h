@@ -20,6 +20,7 @@
 #define PDCR_OFFSET 0x28
 #define ARR_OFFSET 0x2C
 #define CCR1_OFFSET 0x34
+#define CCR2_OFFSET 0x38
 #define TIM2_DIER_OFFSET 0x0C
 #define EGR_OFFSET 0x14
 #define SR_OFFSET 0x10
@@ -50,8 +51,11 @@ void set_auto_reload_timer4(uint32_t auto_reload);
 
 
 void set_compare_timer2(uint32_t compare);
+void set_compare_timer2_channel2(uint32_t compare);
 void set_compare_timer3(uint32_t compare);
+void set_compare_timer3_channel2(uint32_t compare);
 void set_compare_timer4(uint32_t compare);
+void set_compare_timer4_channel2(uint32_t compare);
 
 void enable_timer2_interrupts(bool enable_update_interrupt, bool enable_compare_interrupt);
 void enable_timer3_interrupts(bool enable_update_interrupt, bool enable_compare_interrupt);

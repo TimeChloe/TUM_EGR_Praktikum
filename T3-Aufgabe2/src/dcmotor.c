@@ -10,12 +10,13 @@ static int motor2_speed = 0;
 
 
 
-
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 //DCMOTOR FUNCTIONS
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
 
 void DCMotor_Init(void)
 {
@@ -38,26 +39,27 @@ void DCMotor_Init(void)
     start_timer3();
     start_timer4();
 
+    TIMER_MAX_COMPARE = 1000;
+    TIMER_MIN_COMPARE = 0;
+
     // Set prescaler and auto-reload value
     set_prescaler_timer3(15); // 16 MHz / 16 = 1 MHz
     set_prescaler_timer4(15); // 16 MHz / 16 = 1 MHz
 
-    set_auto_reload_timer3(1000); // 1 MHz / 1000 = 1 kHz
-    set_auto_reload_timer4(1000); // 1 MHz / 1000 = 1 kHz
-    set_compare_timer3(0);
-    set_compare_timer4(0);
-
-    TIMER_MAX_COMPARE = 1000;
-    TIMER_MIN_COMPARE = 0;
-
+    set_auto_reload_timer3(TIMER_MAX_COMPARE); // 1 MHz / 1000 = 1 kHz
+    set_auto_reload_timer4(TIMER_MAX_COMPARE); // 1 MHz / 1000 = 1 kHz
+    set_compare_timer3(TIMER_MIN_COMPARE);
+    set_compare_timer3_channel2(TIMER_MIN_COMPARE);
+    set_compare_timer4(TIMER_MIN_COMPARE);
+    set_compare_timer4_channel2(TIMER_MIN_COMPARE);
 
     // Set initial direction to Forward
     DCMotor_SetDirection(1, Dir_Forward);
     DCMotor_SetDirection(2, Dir_Forward);
 
     // Set initial speed to 0
-    DCMotor_SetSpeed(1, -100);
-    DCMotor_SetSpeed(2, -100);
+    DCMotor_SetSpeed(1, 0);
+    DCMotor_SetSpeed(2, 0);
 }
 
 
@@ -102,17 +104,33 @@ void DCMotor_SetSpeed(int motor, int speed)
     if (speed < MIN_SPEED) speed = MIN_SPEED;
 
     // Convert speed to a compare value
-    uint32_t compare = (speed - MIN_SPEED) * (TIMER_MAX_COMPARE - TIMER_MIN_COMPARE) / (MAX_SPEED - MIN_SPEED) + TIMER_MIN_COMPARE;
+    uint32_t compare = (abs(speed)) * (TIMER_MAX_COMPARE - TIMER_MIN_COMPARE) / 100;
 
     if (motor == 1) {
-        motor1_speed = speed;
         // Set PWM duty cycle for motor 1
+        if (speed == 0) {
+            DCMotor_SetDirection(1, Dir_Stop);
+        } else if (speed > 0) {
+            DCMotor_SetDirection(1, Dir_Forward);
+        } else {
+            DCMotor_SetDirection(1, Dir_Backward);
+        }
         set_compare_timer3(compare);
+        set_compare_timer3_channel2(compare);
+        clear_update_event_timer3();
         generate_update_event_timer3();
     } else if (motor == 2) {
-        motor2_speed = speed;
         // Set PWM duty cycle for motor 2
+        if (speed == 0) {
+            DCMotor_SetDirection(2, Dir_Stop);
+        } else if (speed > 0) {
+            DCMotor_SetDirection(2, Dir_Forward);
+        } else {
+            DCMotor_SetDirection(2, Dir_Backward);
+        }
         set_compare_timer4(compare);
+        set_compare_timer4_channel2(compare);
+        clear_update_event_timer4();
         generate_update_event_timer4();
     }
 }
@@ -120,18 +138,22 @@ void DCMotor_SetSpeed(int motor, int speed)
 void DCMotor_IncreaseSpeed(int motor)
 {
     if (motor == 1) {
-        DCMotor_SetSpeed(1, motor1_speed + SPEED_STEP);
+        motor1_speed = motor1_speed + SPEED_STEP;
+        DCMotor_SetSpeed(1, motor1_speed);
     } else if (motor == 2) {
-        DCMotor_SetSpeed(2, motor2_speed + SPEED_STEP);
+        motor2_speed = motor2_speed + SPEED_STEP;
+        DCMotor_SetSpeed(2, motor2_speed);
     }
 }
 
 void DCMotor_DecreaseSpeed(int motor)
 {
     if (motor == 1) {
-        DCMotor_SetSpeed(1, motor1_speed - SPEED_STEP);
+        motor1_speed = motor1_speed - SPEED_STEP;
+        DCMotor_SetSpeed(1, motor1_speed);
     } else if (motor == 2) {
-        DCMotor_SetSpeed(2, motor2_speed - SPEED_STEP);
+        motor2_speed = motor2_speed - SPEED_STEP;
+        DCMotor_SetSpeed(2, motor2_speed);
     }
 }
 

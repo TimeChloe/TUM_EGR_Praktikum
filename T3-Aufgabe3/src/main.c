@@ -1,6 +1,10 @@
 /**
  * EGR Praktikum
  * Termin 3 - Aufgabe 3
+ * Autor: Yue Zhang
+ * Description: Aufgabe 3: Potentiometer
+ *              reads the voltage at the potentiometer and outputs it to the UART
+ * Last modified: 16.05.2024
  */
 
 #include <stdint.h>

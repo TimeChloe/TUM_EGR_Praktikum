@@ -74,9 +74,21 @@ void set_compare_timer2(uint32_t compare) {
     *compare_address = compare;
 }
 
+// Set the compare value of the timer 2 channel 2
+void set_compare_timer2_channel2(uint32_t compare) {
+    uint32_t volatile *compare_address = (uint32_t *)(TIM2_BASE + CCR2_OFFSET); // 0x38 is the offset for the CCR2 register
+    *compare_address = compare;
+}
+
 // Set the compare value of the timer 3
 void set_compare_timer3(uint32_t compare) {
     uint32_t volatile *compare_address = (uint32_t *)(TIM3_BASE + CCR1_OFFSET); // 0x34 is the offset for the CCR1 register
+    *compare_address = compare;
+}
+
+// Set the compare value of the timer 3 channel 2
+void set_compare_timer3_channel2(uint32_t compare) {
+    uint32_t volatile *compare_address = (uint32_t *)(TIM3_BASE + CCR2_OFFSET); // 0x38 is the offset for the CCR2 register
     *compare_address = compare;
 }
 
@@ -86,6 +98,11 @@ void set_compare_timer4(uint32_t compare) {
     *compare_address = compare;
 }
 
+// Set the compare value of the timer 4 channel 2
+void set_compare_timer4_channel2(uint32_t compare) {
+    uint32_t volatile *compare_address = (uint32_t *)(TIM4_BASE + CCR2_OFFSET); // 0x38 is the offset for the CCR2 register
+    *compare_address = compare;
+}
 
 
 // Enable interrupts for Timer 2
@@ -98,6 +115,7 @@ void enable_timer2_interrupts(bool enable_update_interrupt, bool enable_compare_
     
     if (enable_compare_interrupt) {
         *interrupt_enable_address |= (1 << 1);  // Enable compare interrupt (CC1IE)
+        *interrupt_enable_address |= (1 << 2);  // Enable compare interrupt (CC2IE)
     }
 }
 
@@ -111,6 +129,7 @@ void enable_timer3_interrupts(bool enable_update_interrupt, bool enable_compare_
     
     if (enable_compare_interrupt) {
         *interrupt_enable_address |= (1 << 1);  // Enable compare interrupt (CC1IE)
+        *interrupt_enable_address |= (1 << 2);  // Enable compare interrupt (CC2IE)
     }
 }
 
@@ -124,6 +143,7 @@ void enable_timer4_interrupts(bool enable_update_interrupt, bool enable_compare_
     
     if (enable_compare_interrupt) {
         *interrupt_enable_address |= (1 << 1);  // Enable compare interrupt (CC1IE)
+        *interrupt_enable_address |= (1 << 2);  // Enable compare interrupt (CC2IE)
     }
 }
 
@@ -133,6 +153,7 @@ void generate_update_event_timer2(void) {
     uint32_t volatile *event_address = (uint32_t *)(TIM2_BASE + EGR_OFFSET);  // 0x14 is the offset for the EGR register
     *event_address |= (1 << 0);  // Generate an update event
 }
+
 
 // Generate an update event to update the timer's registers
 void generate_update_event_timer3(void) {
@@ -153,17 +174,37 @@ void clear_update_event_timer2(void) {
     *status_address &= ~(1 << 0);  // Clear the update event interrupt flag
 }
 
+// // Clear update event interrupt flag for timer 2 channel 2
+// void clear_update_event_timer2_channel2(void) {
+//     uint32_t volatile *status_address = (uint32_t *)(TIM2_BASE + SR_OFFSET);  // 0x10 is the offset for the SR register
+//     *status_address &= ~(1 << 1);  // Clear the update event interrupt flag
+// }
+
 // Clear update event interrupt flag
 void clear_update_event_timer3(void) {
     uint32_t volatile *status_address = (uint32_t *)(TIM3_BASE + SR_OFFSET);  // 0x10 is the offset for the SR register
     *status_address &= ~(1 << 0);  // Clear the update event interrupt flag
 }
 
+// // Clear update event interrupt flag for timer 3 channel 2
+// void clear_update_event_timer3_channel2(void) {
+//     uint32_t volatile *status_address = (uint32_t *)(TIM3_BASE + SR_OFFSET);  // 0x10 is the offset for the SR register
+//     *status_address &= ~(1 << 1);  // Clear the update event interrupt flag
+// }
+
 // Clear update event interrupt flag
 void clear_update_event_timer4(void) {
     uint32_t volatile *status_address = (uint32_t *)(TIM4_BASE + SR_OFFSET);  // 0x10 is the offset for the SR register
     *status_address &= ~(1 << 0);  // Clear the update event interrupt flag
 }
+
+// // Clear update event interrupt flag for timer 4 channel 2
+// void clear_update_event_timer4_channel2(void) {
+//     uint32_t volatile *status_address = (uint32_t *)(TIM4_BASE + SR_OFFSET);  // 0x10 is the offset for the SR register
+//     *status_address &= ~(1 << 1);  // Clear the update event interrupt flag
+// }
+
+
 
 // Set the timer 3 mode to PWM
 void set_pwm_mode_timer3(void) {
