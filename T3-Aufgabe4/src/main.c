@@ -1,6 +1,9 @@
 /**
  * EGR Praktikum
  * Termin 3 - Aufgabe 4
+ * Autor: Yue Zhang
+ * Description: Aufgabe 4: Helligkeitssensor
+ *             reads the voltage at the brightness sensor and outputs it to the UART
  */
 
 #include <stdint.h>

@@ -4,22 +4,9 @@
 #include "egr_i2c.h"
 
 
-volatile uint8_t received_data[3];
-volatile unsigned int data_index = 0;
+uint32_t received_data[3];
+uint8_t data_index = 0;
 
-void reset_i2c1(void)
-{
-    // reset I2C1 module    P124
-    uint32_t volatile *adresse = (uint32_t *)(0x40021000 + RCC_APB1RSTR1); //0x40021000 is the base address of the RCC module
-    *adresse |= (1 << 21);
-}
-
-void deactivate_i2c1(void)
-{
-    // deactivate I2C1 module    P124
-    uint32_t volatile *adresse = (uint32_t *)(0x40021000 + RCC_APB1RSTR1); //0x40021000 is the base address of the RCC module
-    *adresse &= ~(1 << 21);
-}
 
 void activate_i2c1(void)
 {
@@ -28,39 +15,37 @@ void activate_i2c1(void)
     *adresse |= (1 << 21);
 }
 
+
 // I2C1 clock source selection     PCLK selected as I2C1 clock source  P327 为什么选PCLK呢 在script的框图里面有解释
 void clock_select_i2c1(void)
 {
 
     uint32_t volatile *adresse = (uint32_t *)(0x40021000 + RCC_CCIPR); //0x40021000 is the base address of the RCC module
     *adresse &= ~(1 << 13);
-    *adresse &= ~(1 << 12);
-    //use the system clock as the I2C1 clock source
-    // *adresse &= ~(1 << 13);
-    // *adresse |= (1 << 12);
-
+    *adresse &= ~ (1 << 12);
 }
+
 
 void I2C_Init(void) {
     // RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
     // RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOAEN;
-    // activate_SYSCFG();
-    reset_i2c1();
-    deactivate_i2c1();
     activate_gpio_a();
     activate_gpio_b();
     activate_i2c1();
 
     clock_select_i2c1();
 
+    // reset_i2c1();
+
+
+
     //configure GPIOA pin 15 as I2C1_SCL
     // PA15 -> I2C1_SCL  //I2C needs to be configured as open-drain
     gpio_mode(GPIOA_BASE, 15, GPIO_ALTERNATE);
     gpio_alternate_function(GPIOA_BASE, 15, GPIO_AF4);
     gpio_output_type(GPIOA_BASE, 15, GPIO_OPEN_DRAIN);
-    gpio_output_speed(GPIOA_BASE, 15, GPIO_MEDIUM_SPEED);
+    gpio_output_speed(GPIOA_BASE, 15, GPIO_HIGH_SPEED);
     gpio_pull(GPIOA_BASE, 15, GPIO_PULL_UP);
-
 
 
     //configure GPIOB pin 7 as I2C1_SDA
@@ -68,7 +53,7 @@ void I2C_Init(void) {
     gpio_mode(GPIOB_BASE, 7, GPIO_ALTERNATE);
     gpio_alternate_function(GPIOB_BASE, 7, GPIO_AF4);
     gpio_output_type(GPIOB_BASE, 7, GPIO_OPEN_DRAIN);
-    gpio_output_speed(GPIOB_BASE, 7, GPIO_MEDIUM_SPEED);
+    gpio_output_speed(GPIOB_BASE, 7, GPIO_HIGH_SPEED);
     gpio_pull(GPIOB_BASE, 7, GPIO_PULL_UP);
 
 
@@ -110,31 +95,53 @@ void I2C_Init(void) {
 void I2C1_EV_IRQHandler(void)
 {
     uint32_t volatile *isr_address = (uint32_t *)(I2C1_BASE + I2C_ISR);
+    uint32_t volatile *icr_address = (uint32_t *)(I2C1_BASE + I2C_ICR);
+    uint32_t volatile *cr2_address = (uint32_t *)(I2C1_BASE + I2C_CR2);
+    uint32_t volatile *cr1_address = (uint32_t *)(I2C1_BASE + I2C_CR1);
     uint32_t volatile *rxdr_address = (uint32_t *)(I2C1_BASE + I2C_RXDR);
-    data_index = 0;
 
-    while (*isr_address & (1 << 2)&& data_index < 3)
+
+    // if (I2C_ISR & I2C_ISR_RXNE)
+    if (*isr_address & (1 << 2))
     {
-        // Read data from I2C_RXDR and store it in the received_data array
-        received_data[data_index] = *rxdr_address;
-        data_index++;
-    }    
+        // received_data[data_index++] = I2C_RXDR;
+        received_data[data_index++] = *rxdr_address;
+
+        if (data_index >= 3)
+        {
+            // finished receiving data
+            // disable RXNE interrupt
+            // I2C_CR1 &= ~I2C_CR1_RXIE;
+            *cr1_address &= ~(1 << 2);
+
+            // wait 5ms to ensure data transmission is complete
+            delay_ms(5);
+
+            // clear stop condition flag
+            // I2C_ICR |= I2C_ICR_STOPCF;
+            *icr_address |= (1 << 5);
+
+            // reset CR2 register
+            // I2C_CR2 = 0;
+            *cr2_address = 0;
+
+            // reset data index
+            data_index = 0;
+        }
+    }
 }
 
 
-void I2C1_SendStartCommand(uint32_t sla_address, uint8_t num_bytes) {
+void I2C1_SendStartCommand(uint32_t sla_address, int data, uint8_t num_bytes) {
     // 配置传输参数
     uint32_t volatile *isr_address = (uint32_t *)(I2C1_BASE + I2C_ISR);
     uint32_t volatile *txdr_address = (uint32_t *)(I2C1_BASE + I2C_TXDR);
 
     // I2C1->CR2 = (I2C_ADDRESS << 1) & I2C_CR2_SADD; // set slave address
     uint32_t volatile *cr2_address = (uint32_t *)(I2C1_BASE + I2C_CR2);
-    uint32_t volatile *icr_address = (uint32_t *)(I2C1_BASE + I2C_ICR);
-
-    
     // 将从设备地址写入 CR2 寄存器的 SADD[7:1]
     // write slave address to CR2 register SADD[7:1]
-    *cr2_address |= ( sla_address & 0x7f) << 1;  
+    *cr2_address |= (sla_address << 1) & 0xFF;  
     // In 7-bit addressing mode (ADD10 = 0)
     *cr2_address &= ~(1 << 11);
 
@@ -160,13 +167,18 @@ void I2C1_SendStartCommand(uint32_t sla_address, uint8_t num_bytes) {
             return;
         }
 
-        // 检查传输缓冲区是否为空，如果传输缓冲区不为空，等待   // check if transmit buffer is empty, if transmit buffer is not empty, wait TXIS bit
+        // 检查传输缓冲区是否为空，如果传输缓冲区不为空，等待   // check if transmit buffer is empty, if transmit buffer is not empty, wait 
         while (!(*isr_address & (1 << 1))) {
             delay_ms(1);
+            // Array für Zeichenkette
+            char testString[14] = "Hello World!\n";
+            // Zeichenkette an PC senden:
+            UARTsend((uint8_t*) testString, strlen(testString));
+            delay_ms(20);
         }
 
         // send data
-        *txdr_address = (0x01);
+        *txdr_address = data;
 
         // wait 5ms to ensure data transmission is complete
         delay_ms(5);
@@ -174,63 +186,37 @@ void I2C1_SendStartCommand(uint32_t sla_address, uint8_t num_bytes) {
 
     // // clear stop condition flag
     // I2C1->ICR |= I2C_ICR_STOPCF;
+    uint32_t volatile *icr_address = (uint32_t *)(I2C1_BASE + I2C_ICR);
     *icr_address |= (1 << 5);
 
     // reset CR2 register
     // I2C1->CR2 = 0;
     *cr2_address &= ~0xFFFFFFFF;  // 将 CR2 寄存器的所有位都清零
 
-    delay_ms(20);
-
 }
 
 void i2c_master_receive(uint32_t sla_address, uint8_t num_bytes)
 {
+    // Set NBYTES to 3, AUTOEND=1
     uint32_t volatile *cr2_address = (uint32_t *)(I2C1_BASE + I2C_CR2);
-    uint32_t volatile *cr1_address = (uint32_t *)(I2C1_BASE + I2C_CR1);
-    uint32_t volatile *icr_address = (uint32_t *)(I2C1_BASE + I2C_ICR);
-
-    // set global data index to 0
-    data_index = 0;
-
-    // Master initialization
-    // Transfer-Richtung festlegen, RXNE Interrupt aktivieren
-    // Set transfer direction to read
-    *cr2_address |= (1 << 10); // Set read direction
-
-    // RXIE bit setzen, um RXNE Interrupt zu aktivieren
-    // I2C1->CR1 |= I2C_CR1_RXIE;
-    *cr1_address |= (1 << 2); // enable RXNE interrupt
-
-    // Interrupt Priorität festlegen und IRQ aktivieren
-    NVIC_SetPriority(I2C1_EV_IRQn, 1); // Priorität auf 1 setzen
-    NVIC_EnableIRQ(I2C1_EV_IRQn);      // I2C1 Event Interrupt aktivieren
-
-    // Kommunikations-Einstellungen festlegen
     *cr2_address |= (num_bytes << 16);
-    //set AUTOEND as 1
     *cr2_address |= (1 << 25);
-    // configure slave address
-    // write slave address to CR2 register SADD[7:1]
-    *cr2_address |= ( sla_address & 0x7f) << 1;  
-    // In 7-bit addressing mode (ADD10 = 0)
-    *cr2_address &= ~(1 << 11);
 
+    // configure slave address and read direction
+    *cr2_address |= (1 << 10);
+    // write slave address to CR2 register SADD[7:1]
+    *cr2_address |= (sla_address << 1) & 0xFF;  
 
     // activate i2c transmission
-    // I2C_CR2 |= I2C_CR2_START; //generate start condition
-    *cr2_address |= (1 << 13); 
+    // I2C_CR2 |= I2C_CR2_START;
+    *cr2_address |= (1 << 13);
 
-    delay_ms(20);
+    // activate RXNE interrupt
+    // I2C_CR1 |= I2C_CR1_RXIE;
+    uint32_t volatile *cr1_address = (uint32_t *)(I2C1_BASE + I2C_CR1);
+    *cr1_address |= (1 << 2);
 
-    // RXNE Interrupt deaktivieren
-    // I2C_CR1 &= ~I2C_CR1_RXIE;
-    *cr1_address &= ~(1 << 2);
-
-    delay_ms(5);
-
-    // STOPCF Bit und I2C_CR2 Register zurücksetzen
-    *icr_address |= (1 << 5); // STOPCF bit setzen, um STOPF Flag zu löschen
-
-    *cr2_address &= ~0xFFFFFFFF;         // I2C_CR2 Register zurücksetzen
+    // configure I2C1_EV_IRQn
+    NVIC_SetPriority(I2C1_EV_IRQn, 1);
+    NVIC_EnableIRQ(I2C1_EV_IRQn);
 }

@@ -49,6 +49,7 @@ void DCMotor_IncreaseSpeed(int motor);
 void DCMotor_DecreaseSpeed(int motor);
 void DCMotor_SetDirection(int motor, int direction);
 
+void DCMotor_All_Stop(void);
 
 
 #endif /* DCMOTOR_H */

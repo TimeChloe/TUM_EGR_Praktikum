@@ -115,7 +115,7 @@ void I2C1_EV_IRQHandler(void)
 }
 
 
-void I2C1_SendStartCommand(uint32_t sla_address, uint8_t* data, uint8_t num_bytes) {
+void I2C1_SendStartCommand(uint32_t sla_address, uint8_t num_bytes) {
     // 配置传输参数
 
     // I2C1->CR2 = (I2C_ADDRESS << 1) & I2C_CR2_SADD; // 设置从设备地址
