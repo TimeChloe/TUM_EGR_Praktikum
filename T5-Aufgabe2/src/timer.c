@@ -13,6 +13,13 @@ void activate_timer2(void)
     *adresse |= (1 << 0);
 }
 
+void deactivate_timer2(void)
+{
+    // deactivate Timer 2 module   P124
+    uint32_t volatile *adresse = (uint32_t *)(0x40021000 + APB1ENR1_OFFSET); //0x40021000 is the base address of the RCC module, 0x58 is the offset for the APB1ENR1 register
+    *adresse &= ~(1 << 0);
+}
+
 void activate_timer3(void)
 {
     // activate Timer 3 module   P124

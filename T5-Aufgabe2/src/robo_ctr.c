@@ -61,12 +61,12 @@ void Robo_Direction2(int direction)
         DCMotor_SetSpeed(2, 4);
         break;
     case Robo_left:
-        DCMotor_SetSpeed(1, 3);
-        DCMotor_SetSpeed(2, -3);
+        DCMotor_SetSpeed(1, 4);
+        DCMotor_SetSpeed(2, -2);
         break;
     case Robo_right:
-        DCMotor_SetSpeed(1, -3);
-        DCMotor_SetSpeed(2, 3);
+        DCMotor_SetSpeed(1, -2);
+        DCMotor_SetSpeed(2, 4);
         break;
     case Robo_backward:
         DCMotor_SetSpeed(1, -3);
@@ -77,8 +77,8 @@ void Robo_Direction2(int direction)
         DCMotor_SetSpeed(2, 0);
         break;
     case Robo_slow_left:
-        DCMotor_SetSpeed(1, 2);
-        DCMotor_SetSpeed(2, 0);
+        DCMotor_SetSpeed(1, 4);
+        DCMotor_SetSpeed(2, 2);
         break;
     case Robo_slow_right:
         DCMotor_SetSpeed(1, 0);

@@ -38,6 +38,7 @@ int TIMER_MIN_COMPARE;
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 void activate_timer2(void);
+void deactivate_timer2(void);
 void activate_timer3(void);
 void activate_timer4(void);
 
